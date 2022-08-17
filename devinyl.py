@@ -3,14 +3,18 @@ import logging
 import random
 import sys
 from argparse import ArgumentParser
+from os.path import exists
 from pathlib import Path
+from urllib.parse import urlparse
+
 
 import librosa
 import numpy as np
 import matchering as mg
+import requests
+import soundfile as sf
 from matchering.core import Config
 from matchering.results import Result
-import soundfile as sf
 
 from effects import (reduce_noise_centroid_mb, reduce_noise_centroid_s, reduce_noise_median, reduce_noise_mfcc_down, 
                      reduce_noise_mfcc_up, reduce_noise_no_reduction, reduce_noise_power, trim_silence)
@@ -28,8 +32,23 @@ FILE READER:
     receives filename,
     returns audio time series (y) and sampling rate of y (sr)
 ------------------------------------'''
-def read_file(file_name):
-    sample_path = file_name
+def read_file(file_path):
+
+    def is_local(url):
+        url_parsed = urlparse(url)
+        if url_parsed.scheme in ('file', ''): # Possibly a local file
+            return exists(url_parsed.path)
+        return False
+    
+    if not is_local(file_path):
+        response = requests.get(file_path)
+        if file_path[-1] == '/':
+            file_path = file_path[:-1]
+        file_name = file_name.split('/')[-1]
+        sample_path = os.path.abspath("./input/" + file_name)
+        open(sample_path, "wb").write(response.content)
+    else:
+        sample_path = file_name
 
     # generating audio time series and a sampling rate (int)
     y, sr = librosa.load(os.path.abspath(sample_path), mono=False)
@@ -70,19 +89,11 @@ def postclean(idx, source_file):
 
 def parse_args():
     parser = ArgumentParser(
-        description="Simple Matchering 2.0 Command Line Application"
+        description="DEVINYL - Recover vinyls beyond recovering"
     )
-    parser.add_argument("target", type=str, help="The track you want to master")
-    parser.add_argument("reference", type=str, help='Some "wet" reference track')
+    parser.add_argument("input", type=str, help="The track (file or URL) you want to master")
+    parser.add_argument("reference", type=str, help='Some reference track (file or URL)')
     # parser.add_argument("result", type=str, help="Where to save your result")
-    parser.add_argument(
-        "-b",
-        "--bit",
-        type=int,
-        choices=[16, 24, 32],
-        default=16,
-        help="The bit depth of your mastered result. 32 means 32-bit float",
-    )
     parser.add_argument(
         "--log",
         type=str,
