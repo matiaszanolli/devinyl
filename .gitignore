@@ -1,0 +1,14 @@
+01_*
+reference.wav
+.vscode
+.python_version
+.pyc
+__pycache__
+.idea
+.DS_Store
+input/*
+*.wav
+*.flac
+*.ogg
+*.opus
+*.mp3
