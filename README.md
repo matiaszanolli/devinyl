@@ -56,12 +56,12 @@ optional arguments:
 
 ### Thanks to these wonderful sites and repos!
 
-[Noise reduction gist]: https://github.com/dodiku/noise_reduction/blob/master/noise.py
-[Noise reduction topic]: http://dsp.stackexchange.com/search?q=noise+reduction/
-[matchering]: https://github.com/sergree/matchering
-[matchering-cli]: https://github.com/sergree/matchering-cli
-[anaconda]: https://www.anaconda.com/products/individual#Downloads
-[FFmpeg]: https://www.ffmpeg.org/download.html
+[Noise reduction gist](https://github.com/dodiku/noise_reduction/blob/master/noise.py)
+[Noise reduction topic](http://dsp.stackexchange.com/search?q=noise+reduction/)
+[matchering](https://github.com/sergree/matchering)
+[matchering-cli](https://github.com/sergree/matchering-cli)
+[Anaconda](https://www.anaconda.com/products/individual#Downloads)
+[FFmpeg](https://www.ffmpeg.org/download.html)
 
 
 ### If this helped you out, please buy me a coffee!
