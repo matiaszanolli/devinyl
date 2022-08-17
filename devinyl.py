@@ -44,7 +44,7 @@ def read_file(file_path):
         response = requests.get(file_path)
         if file_path[-1] == '/':
             file_path = file_path[:-1]
-        file_name = file_name.split('/')[-1]
+        file_name = file_path.split('/')[-1]
         sample_path = os.path.abspath("./input/" + file_name)
         open(sample_path, "wb").write(response.content)
     else:
@@ -136,7 +136,7 @@ def prepare_logger(args):
 
 pre_filters = [reduce_noise_median for _ in range(7)]
 
-filters = [reduce_noise_centroid_s for _ in range(7)]
+filters = [reduce_noise_centroid_mb for _ in range(7)]
 
 # filters = [
 #     reduce_noise_power,
@@ -161,7 +161,7 @@ def run(args, logger):
     )
 
     # reading a file
-    y, sr = read_file(args.target)
+    y, sr = read_file(args.input)
 
     filtered_y_list = [filter(y, sr) for filter in pre_filters]
 
@@ -180,7 +180,7 @@ def run(args, logger):
     
     # generating output files
     for i in range(len(filters[:1])):
-        output_file(i, './output/', args.target, trimmed_y_list[i], sr, args.reference, suffixes[i], args.use_limiter, args.normalize)
+        output_file(i, './output/', args.input, trimmed_y_list[i], sr, args.reference, suffixes[i], args.use_limiter, args.normalize)
 
 
 if __name__ == "__main__":
