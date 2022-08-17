@@ -48,7 +48,7 @@ def read_file(file_path):
         sample_path = os.path.abspath("./input/" + file_name)
         open(sample_path, "wb").write(response.content)
     else:
-        sample_path = file_name
+        sample_path = file_path
 
     # generating audio time series and a sampling rate (int)
     y, sr = librosa.load(os.path.abspath(sample_path), mono=False)
@@ -61,7 +61,7 @@ OUTPUT GENERATOR:
     receives a destination path, file name, audio matrix, and sample rate,
     generates a wav file based on input
 ------------------------------------'''
-def output_file(idx, destination ,filename, y, sr, reference_file, use_limiter, normalize, ext=""):
+def output_file(idx, destination ,filename, y, sr, reference_file, ext, use_limiter, normalize):
     destination = os.path.join(os.path.abspath(destination), Path(filename[:-4] + ext + '.wav').name)
     print('DESTINATION=', destination)
     print('SHAPE=', y.shape, y.dtype)
@@ -136,7 +136,7 @@ def prepare_logger(args):
 
 pre_filters = [reduce_noise_median for _ in range(7)]
 
-filters = [reduce_noise_centroid_mb for _ in range(7)]
+filters = [reduce_noise_power for _ in range(7)]
 
 # filters = [
 #     reduce_noise_power,
@@ -178,9 +178,12 @@ def run(args, logger):
         '_org'
     ]
     
+    use_limiter = not args.no_limiter
+    normalize = not args.dont_normalize
+    
     # generating output files
     for i in range(len(filters[:1])):
-        output_file(i, './output/', args.input, trimmed_y_list[i], sr, args.reference, suffixes[i], args.use_limiter, args.normalize)
+        output_file(i, './output/', args.input, trimmed_y_list[i], sr, args.reference, suffixes[i], use_limiter, normalize)
 
 
 if __name__ == "__main__":
