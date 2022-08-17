@@ -13,7 +13,7 @@ from matchering.results import Result
 import soundfile as sf
 from tqdm import tqdm
 
-from .effects import (reduce_noise_centroid_mb, reduce_noise_centroid_s, reduce_noise_median, reduce_noise_mfcc_down, 
+from effects import (reduce_noise_centroid_mb, reduce_noise_centroid_s, reduce_noise_median, reduce_noise_mfcc_down, 
                      reduce_noise_mfcc_up, reduce_noise_no_reduction, reduce_noise_power, trim_silence)
 
 # Thanks to all of these projects and pages for making this possible.
