@@ -1,7 +1,7 @@
 01_*
 reference.wav
 .vscode
-.python_version
+.python-version
 .pyc
 __pycache__
 .idea

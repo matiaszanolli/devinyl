@@ -11,7 +11,6 @@ import matchering as mg
 from matchering.core import Config
 from matchering.results import Result
 import soundfile as sf
-from tqdm import tqdm
 
 from effects import (reduce_noise_centroid_mb, reduce_noise_centroid_s, reduce_noise_median, reduce_noise_mfcc_down, 
                      reduce_noise_mfcc_up, reduce_noise_no_reduction, reduce_noise_power, trim_silence)
@@ -43,21 +42,21 @@ OUTPUT GENERATOR:
     receives a destination path, file name, audio matrix, and sample rate,
     generates a wav file based on input
 ------------------------------------'''
-def output_file(idx, destination ,filename, y, sr, reference_file, ext=""):
+def output_file(idx, destination ,filename, y, sr, reference_file, use_limiter, normalize, ext=""):
     destination = os.path.join(os.path.abspath(destination), Path(filename[:-4] + ext + '.wav').name)
     print('DESTINATION=', destination)
     print('SHAPE=', y.shape, y.dtype)
     with sf.SoundFile(destination, 'w', sr, 2, 'FLOAT') as f:
         f.write(np.hstack((y[0].reshape(-1, 1), y[1].reshape(-1,1))))
-    postprocess(destination, 44100, reference_file)
+    postprocess(destination, 44100, reference_file, use_limiter, normalize)
     postclean(idx, destination)
 
 
-def postprocess(source_file, sample_rate, reference_file):
-    results = mg.core.process(
+def postprocess(source_file, sample_rate, reference_file, use_limiter, normalize):
+    mg.core.process(
         target=source_file,
         reference=reference_file,
-        results = [Result(source_file.replace('.wav', '.processed.wav'), subtype='FLOAT', use_limiter=True, normalize=False)],
+        results = [Result(source_file.replace('.wav', '.processed.wav'), subtype='FLOAT', use_limiter=use_limiter, normalize=normalize)],
         config=Config(internal_sample_rate=sample_rate)
     )
 
@@ -126,7 +125,7 @@ def prepare_logger(args):
 
 pre_filters = [reduce_noise_median for _ in range(7)]
 
-filters = [reduce_noise_power for _ in range(7)]
+filters = [reduce_noise_centroid_s for _ in range(7)]
 
 # filters = [
 #     reduce_noise_power,
@@ -153,10 +152,10 @@ def run(args, logger):
     # reading a file
     y, sr = read_file(args.target)
 
-    filtered_y_list = tqdm([filter(y, sr) for filter in pre_filters])
+    filtered_y_list = [filter(y, sr) for filter in pre_filters]
 
     # trimming silences
-    trimmed_y_list = tqdm([trim_silence(to_trim)[0] for to_trim in filtered_y_list])
+    trimmed_y_list = [trim_silence(to_trim)[0] for to_trim in filtered_y_list]
     
     suffixes = [
         '_pwr',
@@ -170,7 +169,7 @@ def run(args, logger):
     
     # generating output files
     for i in range(len(filters[:1])):
-        output_file(i, './output/', args.target, trimmed_y_list[i], sr, args.reference, suffixes[i])
+        output_file(i, './output/', args.target, trimmed_y_list[i], sr, args.reference, suffixes[i], args.use_limiter, args.normalize)
 
 
 if __name__ == "__main__":
