@@ -1,4 +1,4 @@
-# DEVINYL - Recover vynils beyond recovering
+# DEVINYL - Recover vinyls beyond recovering
 
 This project started as a proof of concept that old vynils could be recovered at least a bit behind all the noise, crackling and clipping captured by the record player. It's still a work in progress, but since results seem to be decent enough to start working on more advanced features (like a lightweight Wiener filter capturing a portion of only noise, allowing a much cleaner filter).
 
