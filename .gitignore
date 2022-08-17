@@ -1,12 +1,12 @@
-01_*
-reference.wav
 .vscode
 .python-version
 .pyc
+reference.*
 __pycache__
 .idea
 .DS_Store
 input/*
+output/*
 *.wav
 *.flac
 *.ogg
