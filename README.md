@@ -7,6 +7,7 @@ About the reference audio, it should preferably be something that covers most of
 
 ### Requirements
 
+* Python >= 3.7
 * Linux / Windows / macOS (not tested on this last one but should work)
 * SoX binaries (available as packages on Linux via Apt / dnf / pacman, must download from website in Windows / macOS)
 * ffmpeg binaries (same as above, though available in windows through chocolatey / Winget and macOS through brew)
@@ -37,7 +38,7 @@ pip install -r requirements.txt
 ### Usage
 
 ```
-devinyl.py [-h] [-b {16,24,32}] [--log LOG] [--no_limiter]
+devinyl.py [-h] [--log LOG] [--no_limiter]
            [--dont_normalize]
            target_file reference_file
 
