@@ -47,9 +47,6 @@ positional arguments:
 
 optional arguments:
     -h, --help            show this help message and exit
-    -b {16,24,32}, --bit {16,24,32}
-                        The bit depth of your mastered result. 32 means 32-bit
-                        float
     --no_limiter          Disables the limiter at the final stage of processing
     --dont_normalize      Disables normalization, if --no_limiter is set.
 ```
