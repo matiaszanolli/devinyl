@@ -2,7 +2,8 @@
 
 This project started as a proof of concept that old vynils could be recovered at least a bit behind all the noise, crackling and clipping captured by the record player. It's still a work in progress, but since results seem to be decent enough to start working on more advanced features (like a lightweight Wiener filter capturing a portion of only noise, allowing a much cleaner filter).
 
-It needs a reference audio. Preferably something that covers most of the audio spectrum without saturating will do fine, like most of 90's rock or pop records for example. But that's the thing. There's not an exact formula for every song, so feel free to experiment and check out the variation on the results!
+It needs an input record and a reference audio. Both can be either local files or remote URLs. 
+About the reference audio, it should preferably be something that covers most of the audio spectrum without saturating it, like some 90's rock or pop record for example. But that's the thing. There's not an exact formula for every song, so feel free to experiment and check out the variation on the results!
 
 ### Requirements
 
@@ -41,7 +42,7 @@ devinyl.py [-h] [-b {16,24,32}] [--log LOG] [--no_limiter]
            target_file reference_file
 
 positional arguments:
-    target                The track you want to start from
+    input                 The track you want to start from
     reference             Some reference track to enhance the base sound
 
 optional arguments:
