@@ -24,9 +24,9 @@ conda create --name devinyl python=3.7
 conda activate devinyl
 ```
 
-### Pip
-
 Then follow the pip instructions ahead.
+
+### Pip
 
 install all necesary dependencies:
 
