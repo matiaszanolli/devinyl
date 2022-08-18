@@ -17,9 +17,9 @@ def reduce_noise_power(y, sr):
     cent = librosa.feature.spectral_centroid(y=y, sr=sr)
 
     threshold_h = round(np.median(cent))*1.4
-    threshold_l = round(np.median(cent))*0.2
+    threshold_l = round(np.median(cent))*0.4
 
-    less_noise = AudioEffectsChain().lowshelf(gain=-34.0, frequency=threshold_l, slope=0.7).highshelf(gain=-16.0, frequency=threshold_h, slope=0.6).limiter(gain=8.0)
+    less_noise = AudioEffectsChain().lowshelf(gain=-50.0, frequency=threshold_l, slope=0.5).highshelf(gain=-12.0, frequency=threshold_h, slope=0.7).limiter(gain=6.0)
     y_clean = less_noise(y)
 
     return y_clean
@@ -175,14 +175,14 @@ NOISE REDUCTION USING WIENER:
 
 def reduce_noise_wiener(y, sr):
     for _ in range(3):
-        y = sp.signal.wiener(y, 2, 0.3)
+        y = sp.signal.wiener(y, 2, 0.1)
     return (y)
 
 
 def reduce_noise_wiener_dec(y, sr):
     y = reduce_noise_power(y, sr)
     for idx in range(9):
-        y = sp.signal.wiener(y, 2, 0.17 - idx * 0.01)
+        y = sp.signal.wiener(y, 2, 0.15 - idx * 0.01)
     return (y)
 
 
@@ -192,7 +192,7 @@ SILENCE TRIMMER:
     returns an audio matrix with less silence and the amout of time that was trimmed
 ------------------------------------'''
 def trim_silence(y):
-    y_trimmed, index = librosa.effects.trim(y=y, top_db=20, frame_length=2, hop_length=500)
+    y_trimmed, index = librosa.effects.trim(y=y, top_db=20, frame_length=2, hop_length=250)
     trimmed_length = librosa.get_duration(y=y) - librosa.get_duration(y=y_trimmed)
 
     return y_trimmed, trimmed_length

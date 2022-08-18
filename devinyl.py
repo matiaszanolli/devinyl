@@ -1,6 +1,5 @@
 import os
 import logging
-import random
 import sys
 from argparse import ArgumentParser
 from os.path import exists
@@ -9,6 +8,7 @@ from urllib.parse import urlparse
 
 
 import librosa
+import noisereduce as nr
 import numpy as np
 import matchering as mg
 import requests
@@ -62,13 +62,13 @@ OUTPUT GENERATOR:
     receives a destination path, file name, audio matrix, and sample rate,
     generates a wav file based on input
 ------------------------------------'''
-def output_file(idx, destination ,filename, y, sr, reference_file, ext, use_limiter, normalize, fast):
+def output_file(destination ,filename, y, sr, reference_file, trimmed_length, ext, use_limiter, normalize, fast):
     destination = os.path.join(os.path.abspath(destination), Path(filename[:-4] + ext + '.wav').name)
     with sf.SoundFile(destination, 'w', sr, 2, 'FLOAT') as f:
         f.write(np.hstack((y[0].reshape(-1, 1), y[1].reshape(-1,1))))
     postprocess(destination, 44100, reference_file, use_limiter, normalize, False)
     if not fast:
-        postclean(idx, destination)
+        postclean(destination, trimmed_length)
         postprocess(destination, 44100, reference_file, use_limiter, normalize, True)
 
 
@@ -81,9 +81,13 @@ def postprocess(source_file, sample_rate, reference_file, use_limiter, normalize
     )
 
 
-def postclean(idx, source_file):
+def postclean(source_file, trimmed_length):
     y, sr = read_file(source_file.replace('.wav', '.postprocess.wav'))
-    filtered_y = random.choice(filters)(y, sr)
+    filtered_y = filter(y, sr)
+    if trimmed_length > 15000:
+        noisy_part = filtered_y[trimmed_length-10000:trimmed_length:5000]
+        filtered_y = nr.reduce_noise(audio_clip=filtered_y, noise_clip=noisy_part, verbose=True)
+
     with sf.SoundFile(source_file.replace('.wav', '.postprocess.postclean.wav'), 'w', sr, 2, 'FLOAT') as f:
         f.write(np.hstack((filtered_y[0].reshape(-1, 1), filtered_y[1].reshape(-1,1))))
 
@@ -142,9 +146,9 @@ def prepare_logger(args):
 
     return args, logger
 
-pre_filters = [reduce_noise_wiener_dec for _ in range(7)]
+pre_filter = reduce_noise_wiener_dec
 
-filters = [reduce_noise_wiener for _ in range(7)]
+filter = reduce_noise_wiener
 
 # filters = [
 #     reduce_noise_power,
@@ -171,27 +175,16 @@ def run(args, logger):
     # reading a file
     y, sr = read_file(args.input)
 
-    filtered_y_list = [filter(y, sr) for filter in pre_filters]
+    filtered_y = pre_filter(y, sr)
 
     # trimming silences
-    trimmed_y_list = [trim_silence(to_trim)[0] for to_trim in filtered_y_list]
-    
-    suffixes = [
-        '_pwr',
-        '_ctr_s',
-        '_ctr_mb',
-        '_mfcc_up',
-        '_mfcc_down',
-        '_median',
-        '_org'
-    ]
+    _, trimmed_length = trim_silence(filtered_y)
     
     use_limiter = not args.no_limiter
     normalize = not args.dont_normalize
     
     # generating output files
-    for i in range(len(filters[:1])):
-        output_file(i, './output/', args.input, trimmed_y_list[i], sr, args.reference, suffixes[i], use_limiter, normalize, args.fast)
+    output_file('./output/', args.input, filtered_y, sr, args.reference, trimmed_length, 'devyniled', use_limiter, normalize, args.fast)
 
 
 if __name__ == "__main__":
