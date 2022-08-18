@@ -17,7 +17,8 @@ from matchering.core import Config
 from matchering.results import Result
 
 from effects import (reduce_noise_centroid_mb, reduce_noise_centroid_s, reduce_noise_median, reduce_noise_mfcc_down, 
-                     reduce_noise_mfcc_up, reduce_noise_no_reduction, reduce_noise_power, trim_silence)
+                     reduce_noise_mfcc_up, reduce_noise_no_reduction, reduce_noise_power, reduce_noise_power2, 
+                     reduce_noise_wiener, reduce_noise_wiener_dec, trim_silence)
 
 # Thanks to all of these projects and pages for making this possible.
 
@@ -63,27 +64,26 @@ OUTPUT GENERATOR:
 ------------------------------------'''
 def output_file(idx, destination ,filename, y, sr, reference_file, ext, use_limiter, normalize):
     destination = os.path.join(os.path.abspath(destination), Path(filename[:-4] + ext + '.wav').name)
-    print('DESTINATION=', destination)
-    print('SHAPE=', y.shape, y.dtype)
     with sf.SoundFile(destination, 'w', sr, 2, 'FLOAT') as f:
         f.write(np.hstack((y[0].reshape(-1, 1), y[1].reshape(-1,1))))
-    postprocess(destination, 44100, reference_file, use_limiter, normalize)
+    postprocess(destination, 44100, reference_file, use_limiter, normalize, False)
     postclean(idx, destination)
+    postprocess(destination, 44100, reference_file, use_limiter, normalize, True)
 
 
-def postprocess(source_file, sample_rate, reference_file, use_limiter, normalize):
+def postprocess(source_file, sample_rate, reference_file, use_limiter, normalize, second_stage):
     mg.core.process(
-        target=source_file,
+        target=source_file if not second_stage else source_file.replace('.wav', '.postprocess.postclean.wav'),
         reference=reference_file,
-        results = [Result(source_file.replace('.wav', '.processed.wav'), subtype='FLOAT', use_limiter=use_limiter, normalize=normalize)],
+        results = [Result(source_file.replace('.wav', '.postprocess.wav' if not second_stage else '.final.wav'), subtype='FLOAT', use_limiter=use_limiter, normalize=normalize)],
         config=Config(internal_sample_rate=sample_rate)
     )
 
 
 def postclean(idx, source_file):
-    y, sr = read_file(source_file.replace('.wav', '.processed.wav'))
+    y, sr = read_file(source_file.replace('.wav', '.postprocess.wav'))
     filtered_y = random.choice(filters)(y, sr)
-    with sf.SoundFile(source_file.replace('.wav', '.processed_filtered.wav'), 'w', sr, 2, 'FLOAT') as f:
+    with sf.SoundFile(source_file.replace('.wav', '.postprocess.postclean.wav'), 'w', sr, 2, 'FLOAT') as f:
         f.write(np.hstack((filtered_y[0].reshape(-1, 1), filtered_y[1].reshape(-1,1))))
 
 
@@ -99,6 +99,13 @@ def parse_args():
         type=str,
         default=None,
         help="The file to which the logs will be written",
+    )
+    parser.add_argument(
+        "--fast",
+        dest="fast",
+        action="store_true",
+        help="(NEW) Fast mode - Runs half of the process. Gets a decent result at half the processing time, "
+             "yet the result is not as clean as doing the full process",
     )
     parser.add_argument(
         "--no_limiter",
@@ -134,9 +141,9 @@ def prepare_logger(args):
 
     return args, logger
 
-pre_filters = [reduce_noise_median for _ in range(7)]
+pre_filters = [reduce_noise_wiener_dec for _ in range(7)]
 
-filters = [reduce_noise_power for _ in range(7)]
+filters = [reduce_noise_wiener for _ in range(7)]
 
 # filters = [
 #     reduce_noise_power,

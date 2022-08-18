@@ -25,6 +25,18 @@ def reduce_noise_power(y, sr):
     return y_clean
 
 
+def reduce_noise_power2(y, sr):
+
+    cent = librosa.feature.spectral_centroid(y=y, sr=sr)
+
+    threshold_h = round(np.median(cent))*1.4
+    threshold_l = round(np.median(cent))*0.2
+
+    less_noise = AudioEffectsChain().lowshelf(gain=-24.0, frequency=threshold_l, slope=0.7).highshelf(gain=-26.0, frequency=threshold_h, slope=0.6).limiter(gain=12.0)
+    y_clean = less_noise(y)
+
+    return y_clean
+
 '''------------------------------------
 NOISE REDUCTION USING CENTROID ANALYSIS:
     receives an audio matrix,
@@ -153,6 +165,24 @@ def reduce_noise_median(y, sr):
 
 
 def reduce_noise_no_reduction(y, sr):
+    return (y)
+
+'''------------------------------------
+NOISE REDUCTION USING WIENER:
+    receives an audio matrix,
+    returns the matrix after a wiener filtering on the audio wave.
+------------------------------------'''
+
+def reduce_noise_wiener(y, sr):
+    for _ in range(3):
+        y = sp.signal.wiener(y, 2, 0.3)
+    return (y)
+
+
+def reduce_noise_wiener_dec(y, sr):
+    y = reduce_noise_power(y, sr)
+    for idx in range(9):
+        y = sp.signal.wiener(y, 2, 0.17 - idx * 0.01)
     return (y)
 
 

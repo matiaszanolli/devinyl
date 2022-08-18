@@ -1,8 +1,10 @@
 # DEVINYL - Recover vinyls beyond recovering
 
-This project started as a proof of concept that old vynils could be recovered at least a bit behind all the noise, crackling and clipping captured by the record player. It's still a work in progress, but since results seem to be decent enough to start working on more advanced features (like a lightweight Wiener filter capturing a portion of only noise, allowing a much cleaner filter).
+DEVINYL is a tool with a very simple purpose in mind: Restore vinyls. The older and more damage they are, the better the work it does.
 
-It needs an input record and a reference audio. Both can be either local files or remote URLs. 
+It's designed around two main concepts: speed and compatibility. It works on every major platform and architecture, and by using the amazing [Numba](http://numba.pydata.org/) library, it runs blazingly fast over a JIT compiler without worrying about any of all usual Python process and threading restrictions. All your CPUs will get a piece of the cake!
+
+So you basically need an input record and a reference audio. Both can be either local files or remote URLs. 
 About the reference audio, it should preferably be something that covers most of the audio spectrum without saturating it, like some 90's rock or pop record for example. But that's the thing. There's not an exact formula for every song, so feel free to experiment and check out the variation on the results!
 
 ### Requirements
@@ -24,6 +26,8 @@ conda create --name devinyl python=3.7
 
 conda activate devinyl
 ```
+
+(Any Python version above 3.7 will do so far)
 
 Then follow the pip instructions ahead.
 
@@ -48,6 +52,7 @@ positional arguments:
 
 optional arguments:
     -h, --help            show this help message and exit
+    --fast                (NEW) Fast mode - Runs half of the process. Gets a decent result at half the processing time, yet the result is not as clean as doing the full process
     --no_limiter          Disables the limiter at the final stage of processing
     --dont_normalize      Disables normalization, if --no_limiter is set.
 ```
