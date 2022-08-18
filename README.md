@@ -1,6 +1,6 @@
 # DEVINYL - Recover vinyls beyond recovering
 
-DEVINYL is a tool with a very simple purpose in mind: Restore vinyls. The older and more damage they are, the better the work it does.
+DEVINYL is a tool with a very simple purpose in mind: Restore vinyls. The older and more damaged they are, the better the work it does.
 
 It's designed around two main concepts: speed and compatibility. It works on every major platform and architecture, and by using the amazing [Numba](http://numba.pydata.org/) library, it runs blazingly fast over a JIT compiler without worrying about any of all usual Python process and threading restrictions. All your CPUs will get a piece of the cake!
 
@@ -42,7 +42,8 @@ pip install -r requirements.txt
 ### Usage
 
 ```
-devinyl.py [-h] [--log LOG] [--no_limiter]
+devinyl.py [-h] [--log LOG] 
+           [--fast] [--no_limiter]
            [--dont_normalize]
            target_file reference_file
 
