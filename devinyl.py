@@ -62,13 +62,14 @@ OUTPUT GENERATOR:
     receives a destination path, file name, audio matrix, and sample rate,
     generates a wav file based on input
 ------------------------------------'''
-def output_file(idx, destination ,filename, y, sr, reference_file, ext, use_limiter, normalize):
+def output_file(idx, destination ,filename, y, sr, reference_file, ext, use_limiter, normalize, fast):
     destination = os.path.join(os.path.abspath(destination), Path(filename[:-4] + ext + '.wav').name)
     with sf.SoundFile(destination, 'w', sr, 2, 'FLOAT') as f:
         f.write(np.hstack((y[0].reshape(-1, 1), y[1].reshape(-1,1))))
     postprocess(destination, 44100, reference_file, use_limiter, normalize, False)
-    postclean(idx, destination)
-    postprocess(destination, 44100, reference_file, use_limiter, normalize, True)
+    if not fast:
+        postclean(idx, destination)
+        postprocess(destination, 44100, reference_file, use_limiter, normalize, True)
 
 
 def postprocess(source_file, sample_rate, reference_file, use_limiter, normalize, second_stage):
@@ -190,7 +191,7 @@ def run(args, logger):
     
     # generating output files
     for i in range(len(filters[:1])):
-        output_file(i, './output/', args.input, trimmed_y_list[i], sr, args.reference, suffixes[i], use_limiter, normalize)
+        output_file(i, './output/', args.input, trimmed_y_list[i], sr, args.reference, suffixes[i], use_limiter, normalize, args.fast)
 
 
 if __name__ == "__main__":
