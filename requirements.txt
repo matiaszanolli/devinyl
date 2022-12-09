@@ -1,6 +1,6 @@
 appdirs==1.4.4
 audioread==3.0.0
-certifi==2022.6.15
+certifi==2022.12.7
 cffi==1.15.1
 charset-normalizer==2.1.0
 colorama==0.4.5
