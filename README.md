@@ -65,6 +65,8 @@ optional arguments:
 
 [Noise reduction topic](http://dsp.stackexchange.com/search?q=noise+reduction/)
 
+[noisereduce library](https://github.com/timsainb/noisereduce)
+
 [matchering](https://github.com/sergree/matchering)
 
 [matchering-cli](https://github.com/sergree/matchering-cli)
