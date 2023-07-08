@@ -49,7 +49,6 @@ devinyl.py [-h] [--log LOG]
 
 positional arguments:
     input                 The track you want to start from
-    reference             Some reference track to enhance the base sound
 
 optional arguments:
     -h, --help            show this help message and exit
