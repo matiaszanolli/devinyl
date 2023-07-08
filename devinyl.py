@@ -1,6 +1,7 @@
 import os
 import logging
 import sys
+import traceback
 from argparse import ArgumentParser
 from os.path import exists
 from pathlib import Path
@@ -15,10 +16,12 @@ import requests
 import soundfile as sf
 from matchering.core import Config
 from matchering.results import Result
+from tqdm import tqdm
 
 from effects import (reduce_noise_centroid_mb, reduce_noise_centroid_s, reduce_noise_median, reduce_noise_mfcc_down, 
                      reduce_noise_mfcc_up, reduce_noise_no_reduction, reduce_noise_power, reduce_noise_power2, 
-                     reduce_noise_wiener, reduce_noise_wiener_dec, trim_silence)
+                     reduce_noise_wiener, reduce_noise_wiener_dec, reduce_noise_fft, reduce_noise_notch,
+                     reduce_noise_dummy, reduce_noise_adaptive, reduce_noise_sample, trim_silence)
 
 # Thanks to all of these projects and pages for making this possible.
 
@@ -35,19 +38,83 @@ FILE READER:
 ------------------------------------'''
 def read_file(file_path):
 
-    def is_local(url):
-        url_parsed = urlparse(url)
-        if url_parsed.scheme in ('file', ''): # Possibly a local file
-            return exists(url_parsed.path)
-        return False
+    def is_pathname_valid(pathname: str) -> bool:
+        '''
+        `True` if the passed pathname is a valid pathname for the current OS;
+        `False` otherwise.
+        '''
+        # If this pathname is either not a string or is but is empty, this pathname
+        # is invalid.
+        try:
+            if not isinstance(pathname, str) or not pathname:
+                return False
+
+            # Strip this pathname's Windows-specific drive specifier (e.g., `C:\`)
+            # if any. Since Windows prohibits path components from containing `:`
+            # characters, failing to strip this `:`-suffixed prefix would
+            # erroneously invalidate all valid absolute Windows pathnames.
+            drive_name, pathname = os.path.splitdrive(pathname)
+
+            # Directory guaranteed to exist. If the current OS is Windows, this is
+            # the drive to which Windows was installed (e.g., the "%HOMEDRIVE%"
+            # environment variable); else, the typical root directory.
+            root_dirname = os.environ.get('HOMEDRIVE', 'C:') \
+                if sys.platform == 'win32' else os.path.sep
+            assert os.path.isdir(root_dirname)   # ...Murphy and her ironclad Law
+
+            # Append a path separator to this directory if needed.
+            root_dirname = root_dirname.rstrip(os.path.sep) + os.path.sep
+
+            # Test whether each path component split from this pathname is valid or
+            # not, ignoring non-existent and non-readable path components.
+            for pathname_part in pathname.split(os.path.sep):
+                try:
+                    os.lstat(drive_name + pathname_part)
+                # If an OS-specific exception is raised, its error code
+                # indicates whether this pathname is valid or not. Unless this
+                # is the case, this exception implies an ignorable kernel or
+                # filesystem complaint (e.g., path not found or inaccessible).
+                #
+                # Only the following exceptions indicate invalid pathnames:
+                #
+                # * Instances of the Windows-specific "WindowsError" class
+                #   defining the "winerror" attribute whose value is
+                #   "ERROR_INVALID_NAME". Under Windows, "winerror" is more
+                #   fine-grained and hence useful than the generic "errno"
+                #   attribute. When a too-long pathname is passed, for example,
+                #   "errno" is "ENOENT" (i.e., no such file or directory) rather
+                #   than "ENAMETOOLONG" (i.e., file name too long).
+                # * Instances of the cross-platform "OSError" class defining the
+                #   generic "errno" attribute whose value is either:
+                #   * Under most POSIX-compatible OSes, "ENAMETOOLONG".
+                #   * Under some edge-case OSes (e.g., SunOS, *BSD), "ERANGE".
+                except OSError as exc:
+                    traceback.print_exc()
+        # If a "TypeError" exception was raised, it almost certainly has the
+        # error message "embedded NUL character" indicating an invalid pathname.
+        except TypeError as exc:
+            return False
+        # If no exception was raised, all path components and hence this
+        # pathname itself are valid. (Praise be to the curmudgeonly python.)
+        else:
+            return True
     
-    if not is_local(file_path):
-        response = requests.get(file_path)
+    if not is_pathname_valid(file_path.replace('\\', '/')):
+        response = requests.get(file_path, stream=True)
+        total_size_in_bytes= int(response.headers.get('content-length', 0))
+        block_size = 1024 #1 Kibibyte
+        progress_bar = tqdm(total=total_size_in_bytes, unit='B', unit_scale=True)
         if file_path[-1] == '/':
             file_path = file_path[:-1]
         file_name = file_path.split('/')[-1]
         sample_path = os.path.abspath("./input/" + file_name)
-        open(sample_path, "wb").write(response.content)
+        with open(sample_path, "wb") as file:
+            for data in response.iter_content(block_size):
+                progress_bar.update(len(data))
+                file.write(data)
+        progress_bar.close()
+        if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
+            raise requests.exceptions.ConnectionError(f"ERROR while downloading {file_name}.")
     else:
         sample_path = file_path
 
@@ -62,34 +129,51 @@ OUTPUT GENERATOR:
     receives a destination path, file name, audio matrix, and sample rate,
     generates a wav file based on input
 ------------------------------------'''
-def output_file(destination ,filename, y, sr, reference_file, trimmed_length, ext, use_limiter, normalize, fast):
+def output_file(destination ,filename, y, sr, ext, use_limiter, normalize, fast):
+    # audio_stft = librosa.stft(y, n_fft=2048, hop_length=512)
+    # noise_stft = librosa.stft(y_noise, n_fft=2048, hop_length=512)
+    # audio_mag = np.abs(audio_stft)
+    # noise_mag = np.abs(noise_stft)
+    # noise_profile = np.median(noise_mag, axis=2, keepdims=True)
+    # mask = np.divide(audio_mag, noise_profile)
+    # audio_stft_denoised = np.multiply(audio_stft, mask)
+    # y = librosa.istft(audio_stft_denoised, hop_length=512)
+
     destination = os.path.join(os.path.abspath(destination), Path(filename[:-4] + ext + '.wav').name)
-    with sf.SoundFile(destination, 'w', sr, 2, 'FLOAT') as f:
+    with sf.SoundFile(destination, 'w', sr, channels=2, format='FLAC') as f:
         f.write(np.hstack((y[0].reshape(-1, 1), y[1].reshape(-1,1))))
-    postprocess(destination, 44100, reference_file, use_limiter, normalize, False)
+    
+    postprocess(destination, 44100, './reference.wav', use_limiter, normalize, False)
     if not fast:
-        postclean(destination, trimmed_length)
-        postprocess(destination, 44100, reference_file, use_limiter, normalize, True)
+        postclean(destination)
+#        postprocess(destination, 44100, reference_file, use_limiter, normalize, True)
 
 
 def postprocess(source_file, sample_rate, reference_file, use_limiter, normalize, second_stage):
+    
     mg.core.process(
         target=source_file if not second_stage else source_file.replace('.wav', '.postprocess.postclean.wav'),
         reference=reference_file,
-        results = [Result(source_file.replace('.wav', '.postprocess.wav' if not second_stage else '.final.wav'), subtype='FLOAT', use_limiter=use_limiter, normalize=normalize)],
+        results=[Result(source_file.replace('.wav', '.postprocess.wav' if not second_stage else '.final.wav'), subtype='FLOAT', use_limiter=use_limiter, normalize=normalize)],
         config=Config(internal_sample_rate=sample_rate)
     )
 
 
-def postclean(source_file, trimmed_length):
-    y, sr = read_file(source_file.replace('.wav', '.postprocess.wav'))
+def postclean(source_file):
+    file_path = source_file.replace('.wav', '.postprocess.wav')
+
+    # with sf.SoundFile(source_file.replace('.wav', '.noise.wav'), 'w', 44100, 2, 'FLOAT') as f:
+    #     f.write(np.hstack((y_noise[0].reshape(-1, 1), y_noise[1].reshape(-1, 1))))
+
+    # # If there's enough silence to gather background noise from, we gather the stats and run the filter
+    # if len(y_noise[1]) > 30000:
+    #     for _ in tqdm(range(1)):  # Wonderful tri-destilation
+    #         filtered_y = nr.reduce_noise(y=filtered_y, y_noise=y_noise, sr=sr, prop_decrease=0.4, n_jobs=-1, sigmoid_slope_nonstationary=10)
+    y, sr = read_file(file_path)
     filtered_y = filter(y, sr)
-    if trimmed_length > 15000:
-        noisy_part = filtered_y[trimmed_length-10000:trimmed_length:5000]
-        filtered_y = nr.reduce_noise(audio_clip=filtered_y, noise_clip=noisy_part, verbose=True)
 
     with sf.SoundFile(source_file.replace('.wav', '.postprocess.postclean.wav'), 'w', sr, 2, 'FLOAT') as f:
-        f.write(np.hstack((filtered_y[0].reshape(-1, 1), filtered_y[1].reshape(-1,1))))
+        f.write(filtered_y)
 
 
 def parse_args():
@@ -97,7 +181,7 @@ def parse_args():
         description="DEVINYL - Recover vinyls beyond recovering"
     )
     parser.add_argument("input", type=str, help="The track (file or URL) you want to master")
-    parser.add_argument("reference", type=str, help='Some reference track (file or URL)')
+#     parser.add_argument("reference", type=str, help='Some reference track (file or URL)')
     # parser.add_argument("result", type=str, help="Where to save your result")
     parser.add_argument(
         "--log",
@@ -146,9 +230,12 @@ def prepare_logger(args):
 
     return args, logger
 
-pre_filter = reduce_noise_wiener_dec
 
-filter = reduce_noise_wiener
+pre_filter = reduce_noise_no_reduction
+
+
+filter = reduce_noise_sample
+
 
 # filters = [
 #     reduce_noise_power,
@@ -157,7 +244,8 @@ filter = reduce_noise_wiener
 #     reduce_noise_mfcc_up,
 #     reduce_noise_mfcc_down,
 #     reduce_noise_median,
-#     reduce_noise_no_reduction
+#     reduce_noise_no_reduction,
+#     reduce_noise_notch
 # ]
 
 
@@ -178,13 +266,21 @@ def run(args, logger):
     filtered_y = pre_filter(y, sr)
 
     # trimming silences
-    _, trimmed_length = trim_silence(filtered_y)
+    # y_trimmed, trimmed_length, noise_y = trim_silence(filtered_y)
+
+    # noise_samples = len(filtered_y[1]) - len(y_trimmed[1])  # Also taken as the index of the place where the music starts
+    #
+    # # We don't want the section where the disc spins up, neither nothing too close to the edge
+    # noise_idx_low = int(noise_samples * 0.3)
+    # noise_idx_high = int(noise_samples * 0.9)
+    #
+    # # This should be our pure vinyl noise sample
+    # noise_fragment = filtered_y[:, noise_idx_low:noise_idx_high]
     
     use_limiter = not args.no_limiter
     normalize = not args.dont_normalize
-    
     # generating output files
-    output_file('./output/', args.input, filtered_y, sr, args.reference, trimmed_length, 'devyniled', use_limiter, normalize, args.fast)
+    output_file('./output/', args.input, filtered_y, sr, 'devyniled', use_limiter, normalize, args.fast)
 
 
 if __name__ == "__main__":
