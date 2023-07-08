@@ -251,7 +251,7 @@ filter = reduce_noise_sample
 
 def run(args, logger):
     logger.info('##############################################')
-    logger.info('# DEVINYL - Recover vynils beyond recovering #')
+    logger.info('# DEVINYL - Recover vinyls beyond recovering #')
     logger.info('##############################################')
 
     mg.log(
