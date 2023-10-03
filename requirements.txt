@@ -39,7 +39,7 @@ statsmodels==0.13.2
 threadpoolctl==3.1.0
 tqdm==4.64.0
 typing_extensions==4.3.0
-urllib3==1.26.11
+urllib3==1.26.17
 wincertstore==0.2
 zipp==3.8.1
 pydub~=0.25.1
