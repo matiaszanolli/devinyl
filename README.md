@@ -2,63 +2,35 @@
 
 DEVINYL is a tool with a very simple purpose in mind: Restore vinyls. The older and more damaged they are, the better the work it does.
 
-It's designed around two main concepts: speed and compatibility. It works on every major platform and architecture, and by using the amazing [Numba](http://numba.pydata.org/) library, it runs blazingly fast over a JIT compiler without worrying about any of all usual Python process and threading restrictions. All your CPUs will get a piece of the cake!
+### How does it work?
 
-So you basically need an input record and a reference audio. Both can be either local files or remote URLs. 
-About the reference audio, it should preferably be something that covers most of the audio spectrum without saturating it, like some 90's rock or pop record for example. But that's the thing. There's not an exact formula for every song, so feel free to experiment and check out the variation on the results!
+Contrary to v1, DeVinyl v2 is as simple as it can get. Most vinyl records have a ~5 second audio gap befor actually starting each song, specially old 78rpm records. From there, by using the awesome open source (SoX)[https://sourceforge.net/projects/sox/] library, we can create a noise profile from the source track and with said profile, just remove the majority of the noise of the song, including heavy hissing and clicking and without creating noticeable artifacts.
 
 ### Requirements
 
-* Python >= 3.7
-* Linux / Windows / macOS (not tested on this last one but should work)
-* SoX binaries (available as packages on Linux via Apt / dnf / pacman, must download from website in Windows / macOS)
+* Any modern OS 
+* SoX binaries (available as packages on Linux via Apt / dnf / pacman, must download from website in Windows / macOS: (https://sourceforge.net/projects/sox/)[https://sourceforge.net/projects/sox/])
 * ffmpeg binaries (same as above, though available in windows through chocolatey / Winget and macOS through brew)
-* (Windows only) check that SoX and ffmpeg are accessible through terminal, otherwise add their respective location to your user's PATH env variable.
-
-## Install - Requirements (Pip - Conda - Apt)
-
-### Conda
-
-Create a new environment for your devinyling to happen:
-
-```bash
-conda create --name devinyl python=3.7
-
-conda activate devinyl
-```
-
-(Any Python version above 3.7 will do so far)
-
-Then follow the pip instructions ahead.
-
-### Pip
-
-install all necesary dependencies:
-
-```bash
-pip install -r requirements.txt
-```
+* (Windows only) check that SoX and ffmpeg are accessible through terminal, otherwise add their respective location to your user's PATH environment variable.
 
 ### Usage
 
+Linux/macOS
 ```
-devinyl.py [-h] [--log LOG] 
-           [--fast] [--no_limiter]
-           [--dont_normalize]
-           target_file reference_file
-
-positional arguments:
-    input                 The track you want to start from
-
-optional arguments:
-    -h, --help            show this help message and exit
-    --fast                (NEW) Fast mode - Runs half of the process. Gets a decent result at half the processing time, yet the result is not as clean as doing the full process
-    --no_limiter          Disables the limiter at the final stage of processing
-    --dont_normalize      Disables normalization, if --no_limiter is set.
+./devinyl.sh source_file
 ```
+
+Windows (Powershell)
+```
+./devinyl.ps1 source_file
+```
+
+The clean track will be generated as `<source_track>_clean.flac`
 ## Extras
 
-### Thanks to these wonderful sites and repos!
+### Additional reference sites
+
+These links helped me a lot better understanding the topics of audio processing and noise reduction in general: 
 
 [Noise reduction gist](https://github.com/dodiku/noise_reduction/blob/master/noise.py)
 
@@ -78,3 +50,7 @@ optional arguments:
 ### If this helped you out, please buy me a coffee!
 
 https://www.buymeacoffee.com/matiaszanolli
+
+### Or follow my channel in YouTube:
+
+https://www.youtube.com/@TechforMusicAI
