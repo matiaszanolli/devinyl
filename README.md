@@ -4,7 +4,7 @@ DEVINYL is a tool with a very simple purpose in mind: Restore vinyls. The older 
 
 ### How does it work?
 
-Contrary to v1, DeVinyl v2 is as simple as it can get. Most vinyl records have a ~5 second audio gap befor actually starting each song, specially old 78rpm records. From there, by using the awesome open source (SoX)[https://sourceforge.net/projects/sox/] library, we can create a noise profile from the source track and with said profile, just remove the majority of the noise of the song, including heavy hissing and clicking and without creating noticeable artifacts.
+  Contrary to v1, DeVinyl v2 is as simple as it can get. Most vinyl records have at least a ~2 second audio gap before actually starting each song, specially old 78rpm records. So taking a sample from seconds 1 to 2 you can be pretty sure you're getting a pure noise sample (I'll make this adjustable in a future release for your custom tracks). From there, by using the awesome open source (SoX)[https://sourceforge.net/projects/sox/] library, we can create a noise profile from the source track and with said profile, just remove the majority of the noise of the song, including heavy hissing and clicking and without creating noticeable artifacts.
 
 ### Requirements
 
